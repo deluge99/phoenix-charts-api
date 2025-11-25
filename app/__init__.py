@@ -1,1 +1,0 @@
-"""Phoenix Charts API package."""
