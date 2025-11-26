@@ -12,4 +12,4 @@ if [ ! -x "$VENV_UVICORN" ]; then
 fi
 
 PYTHONPATH="$(pwd)" \
-"$VENV_UVICORN" app.main:app --reload --host 0.0.0.0 --port 8000
+"$VENV_UVICORN" app.main:app --reload --host 0.0.0.0 --port 8001
