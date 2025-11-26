@@ -1,112 +1,26 @@
-# ---------------------------
 # Python
-# ---------------------------
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pkl
-*.sqlite3
 
-# ---------------------------
-# Virtual Environments
-# ---------------------------
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
 
-# ---------------------------
-# FastAPI / Uvicorn
-# ---------------------------
-*.log
-*.pid
-uvicorn_reload/
-
-# autoreload cache
-*.reload
-
-# ---------------------------
-# Environment Variables
-# ---------------------------
-.env
-.env.*
-.env.local
-.secrets
-secrets.json
-
-# ---------------------------
-# Operating System Files
-# ---------------------------
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# macOS Spotlight / indexing
-.AppleDouble
-.LSOverride
-.Spotlight-V100
-.Trashes
-
-# ---------------------------
-# IDE / Editor
-# ---------------------------
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-
-# ---------------------------
-# Build Artifacts
-# ---------------------------
-dist/
+# Build / dist
 build/
+dist/
 *.egg-info/
-.eggs/
 pip-wheel-metadata/
 
-# ---------------------------
-# Kerykeion / Swiss Ephemeris
-# ---------------------------
-ephe/
-swisseph/
-*.se1
-*.se2
-*.se3
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
 
-# ---------------------------
-# Wheel Cache Directories
-# ---------------------------
-wheels/
-wheels_svg/
-tmp/
-tmp_svg/
+# Logs
+*.log
 
-# Chart PNG/SVG temp output
-*.png
-*.svg
-tmp_chart_*/
-
-# ---------------------------
-# PyTest / Coverage / Logs
-# ---------------------------
-.cache/
-.coverage
-coverage.xml
-pytest_cache/
-
-# ---------------------------
-# Node / Frontend (if ever used)
-# ---------------------------
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ---------------------------
-# Misc
-# ---------------------------
-*.bak
-*.tmp
-*.swp
-*.lock
