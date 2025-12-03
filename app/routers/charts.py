@@ -163,3 +163,5 @@ async def composite_pdf_endpoint(req: CompositeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Composite PDF generation failed: {e}")
     
+
+    
