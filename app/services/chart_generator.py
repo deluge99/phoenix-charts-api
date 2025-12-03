@@ -2,6 +2,7 @@ from datetime import datetime
 from io import BytesIO
 import base64
 import logging
+from pathlib import Path
 import re
 import traceback
 from typing import Dict
@@ -16,6 +17,8 @@ from reportlab.graphics import renderPDF
 from reportlab.graphics.shapes import Drawing
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from svglib.svglib import svg2rlg
 
 from app.schemas.natal import NatalRequest
@@ -275,12 +278,18 @@ def generate_composite_chart(req: CompositeRequest) -> dict:
     return _wrap_response("composite", svg, data)
 
 
-def convert_svg_to_pdf_bytes(svg_string: str) -> bytes:
+def convert_svg_to_pdf_bytes(
+    svg: str,
+    *,
+    title: str = "",
+    subtitle: str | None = None,
+    logo_path: str | Path | None = None,
+) -> bytes:
     """
     Pure SVG -> PDF conversion (no Cairo, no PNG).
     Mirrors test_wheel_perfection.py.
     """
-    svg_resolved = resolve_css_vars(svg_string)
+    svg_resolved = resolve_css_vars(svg)
 
     drawing = svg2rlg(BytesIO(svg_resolved.encode("utf-8")))
     if drawing is None:
@@ -290,8 +299,44 @@ def convert_svg_to_pdf_bytes(svg_string: str) -> bytes:
     page_width, page_height = landscape(A4)
     c = canvas.Canvas(buf, pagesize=(page_width, page_height))
 
-    max_size = min(page_height, page_width) - 40.0
-    scale_factor = max_size / max(drawing.width, drawing.height)
+    # Header (title + logo)
+    left_margin = 0.75 * inch
+    header_top = page_height - 0.6 * inch
+
+    header_title = title.strip() or "Natal Chart"
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(left_margin, header_top, header_title)
+
+    if subtitle:
+        c.setFont("Helvetica", 11)
+        c.drawString(left_margin, header_top - 0.30 * inch, subtitle)
+
+    if logo_path:
+        try:
+            p = Path(logo_path)
+            if p.exists():
+                logo_size = 1.25 * inch
+                c.drawImage(
+                    str(p),
+                    page_width - logo_size - left_margin,
+                    header_top - logo_size + 0.25 * inch,
+                    width=logo_size,
+                    height=logo_size,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+            else:
+                logger.warning("[wheel] LOGO not found at %s", p)
+        except Exception as e:
+            logger.warning("[wheel] LOGO draw failed: %s", e)
+
+    available_height = header_top - 0.8 * inch  # space below header (tighter gap)
+    available_width = page_width - 1.5 * inch   # side margins
+
+    max_size = min(available_height, available_width) * 0.94  # slightly smaller to avoid overflow
+    base_max = max(drawing.width, drawing.height)
+    scale_factor = max_size / base_max if base_max > 0 else 1.0
+
     scaled_width = drawing.width * scale_factor
     scaled_height = drawing.height * scale_factor
 
@@ -300,7 +345,7 @@ def convert_svg_to_pdf_bytes(svg_string: str) -> bytes:
     drawing.height = scaled_height
 
     x = (page_width - scaled_width) / 2.0
-    y = (page_height - scaled_height) / 2.0
+    y = (available_height - scaled_height) / 2.0 + 0.2 * inch
 
     renderPDF.draw(drawing, c, x, y)
     c.showPage()
@@ -355,7 +400,17 @@ def generate_wheel_pdf_bytes(req) -> bytes:
         drawer = ChartDrawer(chart_data=chart_data, theme="classic")
         svg = drawer.generate_svg_string()
 
-        pdf_bytes = convert_svg_to_pdf_bytes(svg)
+        chart_label = (chart_type or "natal").strip().title()
+        wheel_title = f"{chart_label} Chart {name or subject.get('name') or 'Chart'}"
+
+        logo_path = None  # set if you add a real logo asset later
+
+        pdf_bytes = convert_svg_to_pdf_bytes(
+            svg,
+            title=wheel_title,
+            subtitle=None,
+            logo_path=logo_path,
+        )
         logger.info("[wheel] PDF generated, size=%d bytes", len(pdf_bytes))
         return pdf_bytes
     except Exception as e:
