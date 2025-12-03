@@ -28,6 +28,13 @@ from app.schemas.composite import CompositeRequest
 
 logger = logging.getLogger("phoenix_charts.wheel")
 
+# Resolve repo root: .../phoenix-charts-api
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Logo assets (wheel page + optional watermark)
+PRIMARY_LOGO_PATH = REPO_ROOT / "images" / "PhoenixLogo.png"
+WATERMARK_LOGO_PATH = REPO_ROOT / "images" / "PhoenixWaterMarkLogo.png"
+
 # ------------------------------------------------------------------
 # Kerykeion color map + CSS var resolver for SVG wheels
 # ------------------------------------------------------------------
@@ -396,6 +403,14 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             online=False,
         )
 
+        logger.info(
+            "[wheel] subject_model birth: %s lat=%.4f lon=%.4f tz=%s",
+            getattr(subject_model, "iso_formatted_local_datetime", None),
+            getattr(subject_model, "lat", 0.0),
+            getattr(subject_model, "lng", 0.0),
+            getattr(subject_model, "tz_str", None),
+        )
+
         chart_data = ChartDataFactory.create_natal_chart_data(subject_model)
         drawer = ChartDrawer(chart_data=chart_data, theme="classic")
         svg = drawer.generate_svg_string()
@@ -403,7 +418,11 @@ def generate_wheel_pdf_bytes(req) -> bytes:
         chart_label = (chart_type or "natal").strip().title()
         wheel_title = f"{chart_label} Chart {name or subject.get('name') or 'Chart'}"
 
-        logo_path = None  # set if you add a real logo asset later
+        logo_path = PRIMARY_LOGO_PATH
+
+        if not PRIMARY_LOGO_PATH.exists():
+            logger.warning("[wheel] PRIMARY_LOGO_PATH does not exist: %s", PRIMARY_LOGO_PATH)
+
 
         pdf_bytes = convert_svg_to_pdf_bytes(
             svg,
