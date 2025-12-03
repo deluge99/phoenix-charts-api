@@ -4,3 +4,7 @@ pydantic>=2.0.0
 kerykeion>=5.2.1
 python-multipart
 python-dotenv
+reportlab 
+svglib 
+lxml 
+pillow
