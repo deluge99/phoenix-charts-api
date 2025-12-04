@@ -390,55 +390,37 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             subject = {}
 
         # Build a subject from birth data fields if available
-         # --- Build subject_model from kerykeion_data['subject'] ---
-        # Prefer re-hydrating the original Kerykeion subject so we don't
-        # double-convert timezones or lose coordinates.
-        subject_model = None
-        if isinstance(subject, dict) and subject.get("iso_formatted_local_datetime"):
-            try:
-                subject_model = AstrologicalSubject(**subject)
-                logger.info(
-                    "[wheel] Reused AstrologicalSubject from kerykeion_data "
-                    "iso_local=%s tz=%s lat=%s lng=%s",
-                    subject.get("iso_formatted_local_datetime"),
-                    subject.get("tz_str"),
-                    subject.get("lat"),
-                    subject.get("lng"),
-                )
-            except TypeError as e:
-                logger.warning(
-                    "[wheel] Failed to hydrate AstrologicalSubject from dict (%s); "
-                    "falling back to from_birth_data",
-                    e,
-                )
-
-        # Fallback: reconstruct from birth fields (should still be correct if data is present)
-        if subject_model is None:
-            tz_str = subject.get("tz_str") or subject.get("timezone")
-            if not tz_str:
-                tz_str = "UTC"  # only if NOTHING was supplied
-
-            subject_model = AstrologicalSubjectFactory.from_birth_data(
-                name=subject.get("name", name or "Chart"),
-                year=subject.get("year") or subject.get("birth_year"),
-                month=subject.get("month") or subject.get("birth_month"),
-                day=subject.get("day") or subject.get("birth_day"),
-                hour=subject.get("hour") or subject.get("birth_hour"),
-                minute=subject.get("minute") or subject.get("birth_minute"),
-                lng=subject.get("lng") or subject.get("longitude") or 0.0,
-                lat=subject.get("lat") or subject.get("latitude") or 0.0,
-                tz_str=tz_str,
-                city=subject.get("city") or subject.get("place") or "",
-                nation=subject.get("nation") or subject.get("country") or "",
-                online=False,
-            )
+        subject_model = AstrologicalSubjectFactory.from_birth_data(
+            name=subject.get("name", name or "Chart"),
+            year=subject.get("year") or subject.get("birth_year"),
+            month=subject.get("month") or subject.get("birth_month"),
+            day=subject.get("day") or subject.get("birth_day"),
+            hour=subject.get("hour") or subject.get("birth_hour"),
+            minute=subject.get("minute") or subject.get("birth_minute"),
+            lng=subject.get("lng") or subject.get("longitude") or 0.0,
+            lat=subject.get("lat") or subject.get("latitude") or 0.0,
+            tz_str=subject.get("tz_str") or subject.get("timezone") or "UTC",
+            city=subject.get("city") or subject.get("place") or "",
+            nation=subject.get("nation") or subject.get("country") or "",
+            online=False,
+        )
 
         logger.info(
-            "[wheel] subject_model birth: %s lat=%.4f lon=%.4f tz=%s",
-            getattr(subject_model, "iso_formatted_local_datetime", None),
-            getattr(subject_model, "lat", 0.0),
-            getattr(subject_model, "lng", 0.0),
-            getattr(subject_model, "tz_str", None),
+            "[wheel] subject dump: name=%s year=%s month=%s day=%s hour=%s minute=%s "
+            "lat=%s lng=%s tz_str=%s city=%s nation=%s iso_local=%s iso_utc=%s",
+            subject.get("name"),
+            subject.get("year") or subject.get("birth_year"),
+            subject.get("month") or subject.get("birth_month"),
+            subject.get("day") or subject.get("birth_day"),
+            subject.get("hour") or subject.get("birth_hour"),
+            subject.get("minute") or subject.get("birth_minute"),
+            subject.get("lat") or subject.get("latitude"),
+            subject.get("lng") or subject.get("longitude"),
+            subject.get("tz_str") or subject.get("timezone"),
+            subject.get("city") or subject.get("place"),
+            subject.get("nation") or subject.get("country"),
+            subject.get("iso_formatted_local_datetime"),
+            subject.get("iso_formatted_utc_datetime"),
         )
 
         logger.info(
