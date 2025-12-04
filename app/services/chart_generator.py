@@ -31,6 +31,8 @@ from app.schemas.composite import CompositeRequest
 from app.schemas.wheel import WheelPdfRequest
 from app.services.wheel_generator import svg_to_pdf_bytes
 
+from app.services.phoenix_theme import apply_phoenix_perfection
+
 logger = logging.getLogger("phoenix_charts.wheel")
 
 # Resolve repo root: .../phoenix-charts-api
@@ -205,7 +207,7 @@ def convert_svg_to_pdf_bytes(
     Pure SVG -> PDF conversion (no Cairo, no PNG).
     Mirrors test_wheel_perfection.py.
     """
-    svg_resolved = resolve_css_vars(svg)
+    svg_resolved = apply_phoenix_perfection(svg, theme="classic")
 
     drawing = svg2rlg(BytesIO(svg_resolved.encode("utf-8")))
     if drawing is None:
@@ -360,7 +362,13 @@ def generate_wheel_pdf_bytes(req) -> bytes:
 
             drawer = ChartDrawer(chart_data=chart_model, theme=drawer_theme)
             svg = drawer.generate_svg_string()
-            pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
+            pdf_bytes = svg_to_pdf_bytes(
+                svg,
+                theme=phoenix_theme,
+                name=getattr(req, "name", "") or subject.get("name", ""),
+                chart_type=getattr(req, "chart_type", "") or (k_chart_type or ""),
+            )
+            
             logger.info("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 

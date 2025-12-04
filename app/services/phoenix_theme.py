@@ -1,127 +1,139 @@
-import re
-
 import logging
+import re
+from pathlib import Path
+
 logger = logging.getLogger("phoenix_charts.wheel")
 
-# 1) Phoenix sacred overrides — applied on top of every theme (do not change)
-PHOENIX_SACRED_OVERRIDES = {
-    # Core Planets
-    "--kerykeion-chart-color-sun": "#ffaa00",
-    "--kerykeion-chart-color-moon": "#f0f0f0",
-    "--kerykeion-chart-color-mercury": "#bbbbbb",
-    "--kerykeion-chart-color-venus": "#ff99cc",
-    "--kerykeion-chart-color-mars": "#ff6666",
-    "--kerykeion-chart-color-jupiter": "#ffcc99",
-    "--kerykeion-chart-color-saturn": "#cccc99",
-    "--kerykeion-chart-color-uranus": "#66ccff",
-    "--kerykeion-chart-color-neptune": "#6666ff",
-    "--kerykeion-chart-color-pluto": "#9966cc",
+# Matches: var(--kerykeion-foo-bar)
+VAR_PATTERN = re.compile(r"var\(\s*(--kerykeion-[^)]+?)\s*\)")
 
-    # Points & Asteroids
-    "--kerykeion-chart-color-chiron": "#ffcc66",
-    "--kerykeion-chart-color-true-node": "#99ff99",
-    "--kerykeion-chart-color-pars-fortunae": "#ffcc00",
+# Matches CSS var definitions: --kerykeion-foo-bar: value;
+VAR_DEF_PATTERN = re.compile(
+    r"(?P<name>--kerykeion-[a-z0-9\-]+)\s*:\s*(?P<value>[^;]+);",
+    re.IGNORECASE,
+)
 
-    # Angular Houses
-    "--kerykeion-chart-color-first-house": "#ff6666",
-    "--kerykeion-chart-color-fourth-house": "#66ff66",
-    "--kerykeion-chart-color-seventh-house": "#6666ff",
-    "--kerykeion-chart-color-tenth-house": "#ffff66",
-
-    # Aspects
-    "--kerykeion-chart-color-conjunction": "#ffaa00",
-    "--kerykeion-chart-color-square": "#ff6666",
-    "--kerykeion-chart-color-trine": "#66ff66",
-    "--kerykeion-chart-color-opposition": "#6666ff",
-
-    # House lines & numbers
-    "--kerykeion-chart-color-houses-radix-line": "#888888",
-    "--kerykeion-chart-color-house-number": "#ffffff",
-
-    # Earth & Lunar
-    "--kerykeion-chart-color-earth": "#cc9966",
-    "--kerykeion-chart-color-lunar-phase-1": "#cccccc",
-
-    # Zodiac Icons + Backgrounds (all 12)
-    "--kerykeion-chart-color-zodiac-icon-0": "#ffaa00", "--kerykeion-chart-color-zodiac-bg-0": "#ffaa00",
-    "--kerykeion-chart-color-zodiac-icon-1": "#ffcc99", "--kerykeion-chart-color-zodiac-bg-1": "#ffcc99",
-    "--kerykeion-chart-color-zodiac-icon-2": "#99ccff", "--kerykeion-chart-color-zodiac-bg-2": "#99ccff",
-    "--kerykeion-chart-color-zodiac-icon-3": "#66ff66", "--kerykeion-chart-color-zodiac-bg-3": "#66ff66",
-    "--kerykeion-chart-color-zodiac-icon-4": "#ff6666", "--kerykeion-chart-color-zodiac-bg-4": "#ff6666",
-    "--kerykeion-chart-color-zodiac-icon-5": "#cc9966", "--kerykeion-chart-color-zodiac-bg-5": "#cc9966",
-    "--kerykeion-chart-color-zodiac-icon-6": "#ff99cc", "--kerykeion-chart-color-zodiac-bg-6": "#ff99cc",
-    "--kerykeion-chart-color-zodiac-icon-7": "#6666ff", "--kerykeion-chart-color-zodiac-bg-7": "#6666ff",
-    "--kerykeion-chart-color-zodiac-icon-8": "#ffcc00", "--kerykeion-chart-color-zodiac-bg-8": "#ffcc00",
-    "--kerykeion-chart-color-zodiac-icon-9": "#cccc99", "--kerykeion-chart-color-zodiac-bg-9": "#cccc99",
-    "--kerykeion-chart-color-zodiac-icon-10": "#66ccff", "--kerykeion-chart-color-zodiac-bg-10": "#66ccff",
-    "--kerykeion-chart-color-zodiac-icon-11": "#9966cc", "--kerykeion-chart-color-zodiac-bg-11": "#9966cc",
+# Map theme name -> css filename under app/themes
+THEME_FILES = {
+    "classic": "classic.css",
+    "dark": "dark.css",
+    "dark-high-contrast": "dark-high-contrast.css",
+    "light": "light.css",
+    "strawberry": "strawberry.css",
+    "black-and-white": "black-and-white.css",
 }
 
-# 2) Theme-sensitive colors (only 5 per theme)
-KERYKEION_THEME_COLORS = {
-    "classic": {
-        "--kerykeion-chart-color-paper-0": "#0F0F1A",
-        "--kerykeion-chart-color-paper-1": "#1A1A2E",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#2A2A3E",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#3A3A4E",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#4A4A5E",
-    },
-    "dark": {
-        "--kerykeion-chart-color-paper-0": "#000000",
-        "--kerykeion-chart-color-paper-1": "#111111",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#222222",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#333333",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#444444",
-    },
-    "dark-high-contrast": {
-        "--kerykeion-chart-color-paper-0": "#000000",
-        "--kerykeion-chart-color-paper-1": "#000000",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#FFFFFF",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#FFFFFF",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#FFFFFF",
-    },
-    "light": {
-        "--kerykeion-chart-color-paper-0": "#FFFFFF",
-        "--kerykeion-chart-color-paper-1": "#F5F5F5",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#E0E0E0",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#D0D0D0",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#C0C0C0",
-    },
-    "strawberry": {
-        "--kerykeion-chart-color-paper-0": "#2B0B1A",
-        "--kerykeion-chart-color-paper-1": "#3A0F24",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#4D1A2E",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#5A2338",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#682D42",
-    },
-    "black-and-white": {
-        "--kerykeion-chart-color-paper-0": "#FFFFFF",
-        "--kerykeion-chart-color-paper-1": "#FFFFFF",
-        "--kerykeion-chart-color-zodiac-radix-ring-0": "#000000",
-        "--kerykeion-chart-color-zodiac-radix-ring-1": "#000000",
-        "--kerykeion-chart-color-zodiac-radix-ring-2": "#000000",
-    },
+
+def _normalize_theme_name(theme: str | None) -> str:
+    if not theme:
+        return "classic"
+    t = theme.strip().lower().replace("_", "-")
+    return t if t in THEME_FILES else "classic"
+
+
+def _load_theme_vars(theme: str) -> dict[str, str]:
+    """
+    Load all --kerykeion-* variables from the corresponding CSS file and
+    resolve single-level var(...) indirections (e.g. chart-color-* pointing
+    at color-*).
+    """
+    base_dir = Path(__file__).resolve().parents[1] / "themes"
+    css_path = base_dir / THEME_FILES[theme]
+
+    if not css_path.exists():
+        logger.warning("[phoenix_theme] CSS file not found for theme=%s at %s", theme, css_path)
+        return {}
+
+    text = css_path.read_text(encoding="utf-8")
+
+    raw_vars: dict[str, str] = {}
+
+    # First pass: collect all --kerykeion-* definitions verbatim
+    for m in VAR_DEF_PATTERN.finditer(text):
+        name = m.group("name").strip()
+        value = m.group("value").strip()
+        raw_vars[name] = value
+
+    # Second pass: resolve values like "var(--kerykeion-color-warning)"
+    resolved: dict[str, str] = {}
+
+    def resolve_value(val: str, depth: int = 0) -> str:
+        # Avoid infinite loops
+        if depth > 5:
+            return val
+        m = VAR_PATTERN.search(val)
+        if not m:
+            return val
+        ref_name = m.group(1)
+        ref_val = raw_vars.get(ref_name)
+        if ref_val is None:
+            return val
+        # If the referenced value is another var(), resolve recursively
+        if "var(" in ref_val:
+            ref_val = resolve_value(ref_val, depth + 1)
+        return ref_val.strip()
+
+    for name, value in raw_vars.items():
+        if "var(" in value:
+            resolved[name] = resolve_value(value)
+        else:
+            resolved[name] = value.strip()
+
+    logger.info(
+        "[phoenix_theme] loaded %d variables for theme=%s from %s",
+        len(resolved),
+        theme,
+        css_path.name,
+    )
+    return resolved
+
+
+# Load all themes once at import
+THEME_VARS: dict[str, dict[str, str]] = {
+    theme: _load_theme_vars(theme) for theme in THEME_FILES.keys()
 }
 
 
 def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
+    """
+    Apply the EXACT Kerykeion theme colors to the SVG.
+
+    - Reads all --kerykeion-* vars from the theme CSS.
+    - Updates var definitions in the <style> section.
+    - Inlines var(--kerykeion-...) usages in attributes.
+    - Strips sign-name / planet-name text labels (for a cleaner wheel).
+    """
     raw_theme = theme
-    theme = (theme or "classic").lower().replace("_", "-")
-    logger.info("[phoenix_theme] apply_phoenix_perfection raw_theme=%s normalized_theme=%s", raw_theme, theme)
+    theme = _normalize_theme_name(theme)
+    logger.info(
+        "[phoenix_theme] apply_phoenix_perfection raw_theme=%s normalized_theme=%s",
+        raw_theme,
+        theme,
+    )
 
-    # 1) Sacred Phoenix overrides — ONLY these run
-    for var, color in PHOENIX_SACRED_OVERRIDES.items():
-        svg = re.sub(rf'{re.escape(var)}\s*:[^;]+;', f'{var}: {color};', svg)
-        svg = svg.replace(f"var({var})", color)
+    theme_colors = THEME_VARS.get(theme, {})
+    if not theme_colors:
+        logger.warning("[phoenix_theme] No theme vars loaded for %s; using SVG as-is", theme)
 
-    # 2) DO NOT TOUCH THEME COLORS — Kerykeion already applied them correctly
-    # → This is the fix — remove the old theme override loop
+    # 1) Override CSS variable definitions in the SVG's <style> block
+    for var_name, color in theme_colors.items():
+        # Replace CSS lines like: --kerykeion-...: something;
+        svg = re.sub(
+            rf"{re.escape(var_name)}\s*:[^;]+;",
+            f"{var_name}: {color};",
+            svg,
+        )
 
-    # 3) Strip text labels
-    svg = re.sub(r'<text[^>]*class="sign-name"[^>]*>.*?</text>', '', svg, flags=re.DOTALL)
-    svg = re.sub(r'<text[^>]*class="planet-name"[^>]*>.*?</text>', '', svg, flags=re.DOTALL)
+    # 2) Strip text labels (optional – keeps your wheel cleaner like examples)
+    svg = re.sub(r'<text[^>]*class="sign-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
+    svg = re.sub(r'<text[^>]*class="planet-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
 
-    # 4) Inline any remaining var()
-    svg = re.sub(r'var\([^)]+\)', '#000000', svg)
+    # 3) Inline any remaining var(--kerykeion-...) usages
+    def _inline_var(m: re.Match) -> str:
+        name = m.group(1)
+        # prefer theme-specific color; if not found, leave as-is so you can see it
+        return theme_colors.get(name, m.group(0))
+
+    svg = VAR_PATTERN.sub(_inline_var, svg)
 
     return svg
