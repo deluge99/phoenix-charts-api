@@ -102,6 +102,7 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
     - Updates var definitions in the <style> section.
     - Inlines var(--kerykeion-...) usages in attributes.
     - Strips sign-name / planet-name text labels (for a cleaner wheel).
+    - Ensures a chart "paper" background rect exists using paper-1.
     """
     raw_theme = theme
     theme = _normalize_theme_name(theme)
@@ -113,11 +114,12 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
 
     theme_colors = THEME_VARS.get(theme, {})
     if not theme_colors:
-        logger.warning("[phoenix_theme] No theme vars loaded for %s; using SVG as-is", theme)
+        logger.warning(
+            "[phoenix_theme] No theme vars loaded for %s; using SVG as-is", theme
+        )
 
     # 1) Override CSS variable definitions in the SVG's <style> block
     for var_name, color in theme_colors.items():
-        # Replace CSS lines like: --kerykeion-...: something;
         svg = re.sub(
             rf"{re.escape(var_name)}\s*:[^;]+;",
             f"{var_name}: {color};",
@@ -128,12 +130,37 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
     svg = re.sub(r'<text[^>]*class="sign-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
     svg = re.sub(r'<text[^>]*class="planet-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
 
-    # 3) Inline any remaining var(--kerykeion-...) usages
+    # 3) Inline any remaining var(--kerykeion-...) usages in attributes
     def _inline_var(m: re.Match) -> str:
         name = m.group(1)
-        # prefer theme-specific color; if not found, leave as-is so you can see it
         return theme_colors.get(name, m.group(0))
 
     svg = VAR_PATTERN.sub(_inline_var, svg)
+
+    # 4) Ensure the SVG has a "paper" background rect inside <svg>, but
+    #    do NOT touch the PDF page background.
+    try:
+        # Prefer paper-1, fall back to paper-0
+        paper_hex = (
+            theme_colors.get("--kerykeion-chart-color-paper-1")
+            or theme_colors.get("--kerykeion-chart-color-paper-0")
+        )
+
+        if paper_hex:
+            paper_hex = paper_hex.strip()
+
+            # Avoid double-inserting if we've already added it once
+            if 'data-phoenix-paper-bg="1"' not in svg:
+                # Find the opening <svg ...> tag
+                m = re.search(r"<svg[^>]*>", svg, flags=re.IGNORECASE)
+                if m:
+                    insert_pos = m.end()
+                    bg_rect = (
+                        f'<rect width="100%" height="100%" '
+                        f'fill="{paper_hex}" data-phoenix-paper-bg="1"/>'
+                    )
+                    svg = svg[:insert_pos] + bg_rect + svg[insert_pos:]
+    except Exception as e:
+        logger.warning("[phoenix_theme] failed to inject paper background: %s", e)
 
     return svg
