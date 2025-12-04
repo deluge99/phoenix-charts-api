@@ -8,7 +8,7 @@ from reportlab.lib.utils import ImageReader
 from pathlib import Path
 from svglib.svglib import svg2rlg
 
-from app.services.phoenix_theme import apply_phoenix_perfection
+from app.services.phoenix_theme import apply_phoenix_perfection, THEME_VARS
 
 import logging
 logger = logging.getLogger("phoenix_charts.wheel")
@@ -42,6 +42,38 @@ def svg_to_pdf_bytes(
     buffer = BytesIO()
     page_width, page_height = landscape(A4)
     c = canvas.Canvas(buffer, pagesize=(page_width, page_height))
+
+    # -----------------------------
+    # 0) Fill page with theme paper color
+    # -----------------------------
+    # Normalize theme key for THEME_VARS (same idea as _normalize_theme_name)
+    theme_key = (theme or "classic").strip().lower().replace("_", "-")
+    if theme_key not in THEME_VARS:
+        theme_key = "classic"
+
+    palette = THEME_VARS.get(theme_key, {})
+    paper_hex = (
+        palette.get("--kerykeion-chart-color-paper-1")
+        or palette.get("--kerykeion-chart-color-paper-0")
+        or "#ffffff"
+    )
+
+    try:
+        paper_hex = paper_hex.strip()
+        if paper_hex.startswith("var("):
+            # Just in case anything slipped through unresolved
+            inner_name = paper_hex.split("(", 1)[1].split(")", 1)[0].strip()
+            paper_hex = palette.get(inner_name, "#ffffff")
+        paper_hex = paper_hex.lstrip("#")
+        r = int(paper_hex[0:2], 16) / 255.0
+        g = int(paper_hex[2:4], 16) / 255.0
+        b = int(paper_hex[4:6], 16) / 255.0
+        c.setFillColorRGB(r, g, b)
+    except Exception as e:
+        logger.warning("[wheel] failed to parse paper color %r: %s", paper_hex, e)
+        c.setFillColorRGB(1, 1, 1)
+
+    c.rect(0, 0, page_width, page_height, fill=1, stroke=0)
 
     # -----------------------------
     # 1) Phoenix Oracle Header Text
