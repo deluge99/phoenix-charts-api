@@ -47,7 +47,7 @@ transit = AstrologicalSubjectFactory.from_birth_data(
 # 1. NATAL
 print("1. NATAL")
 chart_data = ChartDataFactory.create_natal_chart_data(natal)
-drawer = ChartDrawer(chart_data=chart_data, theme="dark-high-contrast")
+drawer = ChartDrawer(chart_data=chart_data, theme="strawberry")
 Path("matthew_natal.svg").write_text(drawer.generate_svg_string())
 
 # 2. SYNASTRY
@@ -59,7 +59,7 @@ Path("matthew_synastry.svg").write_text(drawer.generate_svg_string())
 # 3. TRANSIT
 print("3. TRANSIT")
 chart_data = ChartDataFactory.create_transit_chart_data(natal, transit)
-drawer = ChartDrawer(chart_data=chart_data, theme="dark-high-contrast")
+drawer = ChartDrawer(chart_data=chart_data, theme="dark")
 Path("matthew_transit.svg").write_text(drawer.generate_svg_string())
 
 # 4. COMPOSITE — FIXED
@@ -72,7 +72,7 @@ composite_subject.iso_formatted_local_datetime = "1999-01-01T12:00:00-08:00"  # 
 composite_subject.iso_formatted_utc_datetime = "1999-01-01T20:00:00+00:00"
 
 chart_data = ChartDataFactory.create_natal_chart_data(composite_subject)
-drawer = ChartDrawer(chart_data=chart_data, theme="dark-high-contrast")
+drawer = ChartDrawer(chart_data=chart_data, theme="light")
 Path("matthew_composite.svg").write_text(drawer.generate_svg_string())
 
 # Open all

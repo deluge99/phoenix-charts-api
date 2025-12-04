@@ -27,6 +27,8 @@ from app.schemas.natal import NatalRequest
 from app.schemas.synastry import SynastryRequest
 from app.schemas.transit import TransitRequest
 from app.schemas.composite import CompositeRequest
+from app.schemas.wheel import WheelPdfRequest
+from app.services.wheel_generator import svg_to_pdf_bytes
 
 logger = logging.getLogger("phoenix_charts.wheel")
 
@@ -156,6 +158,30 @@ def resolve_css_vars(svg: str) -> str:
         return COLOR_MAP.get(match.group(1), "#000000")
 
     return VAR_PATTERN.sub(repl, svg)
+
+
+# ------------------------------------------------------------------
+# Theme normalization
+# ------------------------------------------------------------------
+_ALLOWED_THEMES = {
+    "classic",
+    "dark",
+    "dark-high-contrast",
+    "light",
+    "strawberry",
+    "black-and-white",
+}
+
+
+def _normalize_theme(theme: str | None) -> str:
+    """
+    Normalize incoming theme strings to the Kerykeion/phoenix accepted set.
+    Maps underscores to hyphens and falls back to 'classic' if unsupported.
+    """
+    if not theme:
+        return "classic"
+    t = theme.strip().lower().replace("_", "-")
+    return t if t in _ALLOWED_THEMES else "classic"
 
 def generate_natal_chart(req: NatalRequest) -> Dict:
     """
@@ -363,33 +389,71 @@ def convert_svg_to_pdf_bytes(
     return buf.read()
 
 
+def generate_natal_svg_for_wheel(req: WheelPdfRequest) -> str:
+    """
+    Generate a natal SVG using the same Kerykeion pipeline as all_charts_final_perfect.py.
+    Theme is normalized to a supported Kerykeion theme; Phoenix overrides colors later.
+    """
+    theme = _normalize_theme(getattr(req, "theme", None))
+    subject_model = AstrologicalSubjectFactory.from_birth_data(
+        name=req.name,
+        year=req.year,
+        month=req.month,
+        day=req.day,
+        hour=req.hour,
+        minute=req.minute,
+        lng=req.lng,
+        lat=req.lat,
+        tz_str=req.tz_str,
+        city=req.city or "",
+        nation=req.country or "",
+        online=False,
+    )
+    chart_data = ChartDataFactory.create_natal_chart_data(subject_model)
+    drawer = ChartDrawer(chart_data=chart_data, theme=theme)
+    return drawer.generate_svg_string()
+
+
 def generate_wheel_pdf_bytes(req) -> bytes:
     """
-    Generate a wheel PDF from full kerykeion_data (pure SVG->PDF, no cairo).
+    Generate a wheel PDF for natal charts.
+
+    Primary path: WheelPdfRequest with explicit birth fields (name/year/month/day/hour/minute/lat/lng/tz_str/theme).
+    Legacy path: objects carrying kerykeion_data with a nested subject.
     """
     try:
-        name = getattr(req, "name", None)
-        chart_type = getattr(req, "chart_type", None)
-        logger.info("[wheel] generate_wheel_pdf_bytes name=%s chart_type=%s", name, chart_type)
+        # If this is already a WheelPdfRequest, use the explicit birth fields.
+        if hasattr(req, "year") and hasattr(req, "month"):
+            theme = _normalize_theme(getattr(req, "theme", None))
+            logger.info(
+                "[wheel] generate_wheel_pdf_bytes (WheelPdfRequest) %s %04d-%02d-%02d %02d:%02d lat=%.4f lng=%.4f tz=%s theme=%s",
+                getattr(req, "name", None),
+                getattr(req, "year", 0),
+                getattr(req, "month", 0),
+                getattr(req, "day", 0),
+                getattr(req, "hour", 0),
+                getattr(req, "minute", 0),
+                getattr(req, "lat", 0.0),
+                getattr(req, "lng", 0.0),
+                getattr(req, "tz_str", "UTC"),
+                theme,
+            )
+            svg = generate_natal_svg_for_wheel(req)
+            pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
+            logger.info("[wheel] PDF generated, size=%d bytes", len(pdf_bytes))
+            return pdf_bytes
 
+        # Legacy path: attempt to pull from kerykeion_data/subject if present.
+        name = getattr(req, "name", None)
         kdata = getattr(req, "kerykeion_data", None)
+        theme = "classic"
+
         if not isinstance(kdata, dict):
-            logger.warning("[wheel] kerykeion_data is not a dict: %r", type(kdata))
             raise ValueError("kerykeion_data missing or invalid")
 
-        logger.info("[wheel] kerykeion_data keys=%s", list(kdata.keys()))
         subject = kdata.get("subject") or {}
-        if isinstance(subject, dict):
-            logger.info(
-                "[wheel] subject keys=%s iso_local=%s",
-                list(subject.keys()),
-                subject.get("iso_formatted_local_datetime"),
-            )
-        else:
-            logger.warning("[wheel] subject missing or not dict: %r", type(subject))
-            subject = {}
+        theme = _normalize_theme(kdata.get("theme") or subject.get("theme") or theme)
 
-        # Build a subject from birth data fields if available
         subject_model = AstrologicalSubjectFactory.from_birth_data(
             name=subject.get("name", name or "Chart"),
             year=subject.get("year") or subject.get("birth_year"),
@@ -405,51 +469,10 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             online=False,
         )
 
-        logger.info(
-            "[wheel] subject dump: name=%s year=%s month=%s day=%s hour=%s minute=%s "
-            "lat=%s lng=%s tz_str=%s city=%s nation=%s iso_local=%s iso_utc=%s",
-            subject.get("name"),
-            subject.get("year") or subject.get("birth_year"),
-            subject.get("month") or subject.get("birth_month"),
-            subject.get("day") or subject.get("birth_day"),
-            subject.get("hour") or subject.get("birth_hour"),
-            subject.get("minute") or subject.get("birth_minute"),
-            subject.get("lat") or subject.get("latitude"),
-            subject.get("lng") or subject.get("longitude"),
-            subject.get("tz_str") or subject.get("timezone"),
-            subject.get("city") or subject.get("place"),
-            subject.get("nation") or subject.get("country"),
-            subject.get("iso_formatted_local_datetime"),
-            subject.get("iso_formatted_utc_datetime"),
-        )
-
-        logger.info(
-            "[wheel] subject_model birth: %s lat=%.4f lon=%.4f tz=%s",
-            getattr(subject_model, "iso_formatted_local_datetime", None),
-            getattr(subject_model, "lat", 0.0),
-            getattr(subject_model, "lng", 0.0),
-            getattr(subject_model, "tz_str", None),
-        )
-
         chart_data = ChartDataFactory.create_natal_chart_data(subject_model)
-        drawer = ChartDrawer(chart_data=chart_data, theme="classic")
+        drawer = ChartDrawer(chart_data=chart_data, theme=theme)
         svg = drawer.generate_svg_string()
-
-        chart_label = (chart_type or "natal").strip().title()
-        wheel_title = f"{chart_label} Chart {name or subject.get('name') or 'Chart'}"
-
-        logo_path = PRIMARY_LOGO_PATH
-
-        if not PRIMARY_LOGO_PATH.exists():
-            logger.warning("[wheel] PRIMARY_LOGO_PATH does not exist: %s", PRIMARY_LOGO_PATH)
-
-
-        pdf_bytes = convert_svg_to_pdf_bytes(
-            svg,
-            title=wheel_title,
-            subtitle=None,
-            logo_path=logo_path,
-        )
+        pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
         logger.info("[wheel] PDF generated, size=%d bytes", len(pdf_bytes))
         return pdf_bytes
     except Exception as e:
