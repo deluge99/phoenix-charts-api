@@ -33,6 +33,8 @@ from app.services.wheel_generator import svg_to_pdf_bytes
 
 from app.services.phoenix_theme import apply_phoenix_perfection
 
+from app.services.kerykeion_model_utils import build_chart_model_from_kerykeion_data
+
 logger = logging.getLogger("phoenix_charts.wheel")
 
 # Resolve repo root: .../phoenix-charts-api
@@ -350,15 +352,16 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             zodiac_type = subject.get("zodiac_type")
             logger.info("[wheel] house_system=%s zodiac_type=%s", house_sys, zodiac_type)
 
-            # Convert dict -> concrete chart data model (Single or Dual)
-            k_chart_type = (kdata.get("chart_type") or kdata.get("chartType") or "Natal").lower()
-            model_cls = SingleChartDataModel if k_chart_type in ("natal", "composite", "singlereturnchart") else DualChartDataModel
-            if hasattr(model_cls, "model_validate"):
-                chart_model = model_cls.model_validate(kdata)  # pydantic v2
-            elif hasattr(model_cls, "parse_obj"):
-                chart_model = model_cls.parse_obj(kdata)       # pydantic v1
-            else:
-                chart_model = model_cls(**kdata)               # fallback
+            # Convert dict -> concrete chart data model (Single or Dual) via shared helper
+            chart_model = build_chart_model_from_kerykeion_data(kdata)
+
+            drawer = ChartDrawer(chart_data=chart_model, theme=drawer_theme)
+            svg = drawer.generate_svg_string()
+                        # Human-readable chart type label for the wheel header
+            chart_type_label = (
+                getattr(req, "chart_type", "")        # "natal" from astro-bot
+                or str(kdata.get("chart_type") or kdata.get("chartType") or "Natal")
+            )
 
             drawer = ChartDrawer(chart_data=chart_model, theme=drawer_theme)
             svg = drawer.generate_svg_string()
@@ -366,9 +369,9 @@ def generate_wheel_pdf_bytes(req) -> bytes:
                 svg,
                 theme=phoenix_theme,
                 name=getattr(req, "name", "") or subject.get("name", ""),
-                chart_type=getattr(req, "chart_type", "") or (k_chart_type or ""),
+                chart_type=chart_type_label,
             )
-            
+
             logger.info("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 
