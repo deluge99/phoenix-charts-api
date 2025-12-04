@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from pydantic import BaseModel
 
@@ -10,17 +10,20 @@ class WheelPdfRequest(BaseModel):
     """
 
     name: str
-    year: int
-    month: int
-    day: int
-    hour: int
-    minute: int
-    lat: float
-    lng: float
-    tz_str: str
+    year: Optional[int] = None
+    month: Optional[int] = None
+    day: Optional[int] = None
+    hour: Optional[int] = None
+    minute: Optional[int] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    tz_str: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
     theme: Optional[str] = "classic"
 
-    # 👇 NEW FIELD — this is what generate_wheel_pdf_bytes is trying to read
+    # Full kerykeion payload from Astro-Bot (preferred)
+    kerykeion_data: Optional[Dict[str, Any]] = None
+
+    # Optional chart type marker
     chart_type: Optional[str] = "natal"

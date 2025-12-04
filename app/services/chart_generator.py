@@ -14,6 +14,7 @@ from kerykeion import (
     ChartDrawer,
     CompositeSubjectFactory,
 )
+from kerykeion.schemas.kr_models import ChartDataModel, SingleChartDataModel, DualChartDataModel
 
 from reportlab.graphics import renderPDF
 from reportlab.graphics.shapes import Drawing
@@ -418,10 +419,51 @@ def generate_wheel_pdf_bytes(req) -> bytes:
     """
     Generate a wheel PDF for natal charts.
 
-    Primary path: WheelPdfRequest with explicit birth fields (name/year/month/day/hour/minute/lat/lng/tz_str/theme).
-    Legacy path: objects carrying kerykeion_data with a nested subject.
+    Preferred: use full kerykeion_data (no recompute).
+    Fallback: recompute from explicit birth fields.
     """
     try:
+        # Preferred path: reuse the kerykeion_data sent by Astro-Bot
+        if getattr(req, "kerykeion_data", None):
+            kdata = req.kerykeion_data
+            if not isinstance(kdata, dict):
+                raise ValueError("kerykeion_data must be a dict when provided")
+
+            subject = kdata.get("subject") or {}
+            if not isinstance(subject, dict):
+                subject = {}
+
+            asc = subject.get("ascendant") or subject.get("asc") or {}
+            logger.info(
+                "[wheel] Using kerykeion_data from Astro-Bot for wheel; ASC abs_pos=%s sign=%s",
+                asc.get("abs_pos"),
+                asc.get("sign"),
+            )
+
+            raw_theme = (
+                getattr(req, "theme", None)
+                or kdata.get("theme")
+                or subject.get("theme")
+            )
+            theme = _normalize_theme(raw_theme)
+
+            # Convert dict -> ChartDataModel
+            # Convert dict -> concrete chart data model (Single or Dual)
+            k_chart_type = (kdata.get("chart_type") or kdata.get("chartType") or "Natal").lower()
+            model_cls = SingleChartDataModel if k_chart_type in ("natal", "composite", "singlereturnchart") else DualChartDataModel
+            if hasattr(model_cls, "model_validate"):
+                chart_model = model_cls.model_validate(kdata)  # type: ignore[attr-defined]
+            elif hasattr(model_cls, "parse_obj"):
+                chart_model = model_cls.parse_obj(kdata)  # type: ignore[attr-defined]
+            else:
+                chart_model = model_cls(**kdata)  # type: ignore[arg-type]
+
+            drawer = ChartDrawer(chart_data=chart_model, theme=theme)
+            svg = drawer.generate_svg_string()
+            pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
+            logger.info("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
+            return pdf_bytes
+
         # If this is already a WheelPdfRequest, use the explicit birth fields.
         if hasattr(req, "year") and hasattr(req, "month"):
             theme = _normalize_theme(getattr(req, "theme", None))
