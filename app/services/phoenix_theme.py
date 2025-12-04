@@ -106,7 +106,7 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
     Apply sacred overrides, then theme colors, strip labels, and inline remaining vars.
     Sacred overrides are always applied; only the 5 theme colors change per theme.
     """
-    theme = (theme or "classic").lower()
+    theme = (theme or "classic").lower().replace("_", "-")
     theme_colors = KERYKEION_THEME_COLORS.get(theme, KERYKEION_THEME_COLORS["classic"])
 
     # 1) Sacred overrides

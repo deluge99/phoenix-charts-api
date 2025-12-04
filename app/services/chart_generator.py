@@ -453,6 +453,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
 
         subject = kdata.get("subject") or {}
         theme = _normalize_theme(kdata.get("theme") or subject.get("theme") or theme)
+        logger.info("[wheel] legacy path using theme=%s", theme)
 
         subject_model = AstrologicalSubjectFactory.from_birth_data(
             name=subject.get("name", name or "Chart"),
