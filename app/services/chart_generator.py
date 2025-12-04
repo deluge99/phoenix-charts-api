@@ -7,6 +7,9 @@ import re
 import traceback
 from typing import Dict
 
+import os
+PHX_DEBUG = os.getenv("PHOENIX_DEBUG", "0") == "1"
+
 from kerykeion import (
     AstrologicalSubject,
     AstrologicalSubjectFactory,
@@ -330,7 +333,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             kdata["subject"] = subject
 
             asc = subject.get("ascendant") or subject.get("asc") or {}
-            logger.info(
+            logger.debug(
                 "[wheel] Using kerykeion_data from Astro-Bot for wheel; ASC abs_pos=%s sign=%s zodiac_type=%s houses_system=%s",
                 asc.get("abs_pos"),
                 asc.get("sign"),
@@ -346,11 +349,11 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             # This theme goes into Phoenix recoloring; ChartDrawer can stay on a safe base theme
             phoenix_theme = _normalize_theme(raw_theme)
             drawer_theme = phoenix_theme
-            logger.info("[wheel] Theme received=%s phoenix_theme=%s drawer_theme=%s", raw_theme, phoenix_theme, drawer_theme)
+            logger.debug("[wheel] Theme received=%s phoenix_theme=%s drawer_theme=%s", raw_theme, phoenix_theme, drawer_theme)
 
             house_sys = kdata.get("house_system") or subject.get("houses_system_identifier")
             zodiac_type = subject.get("zodiac_type")
-            logger.info("[wheel] house_system=%s zodiac_type=%s", house_sys, zodiac_type)
+            logger.debug("[wheel] house_system=%s zodiac_type=%s", house_sys, zodiac_type)
 
             # Convert dict -> concrete chart data model (Single or Dual) via shared helper
             chart_model = build_chart_model_from_kerykeion_data(kdata)
@@ -372,7 +375,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
                 chart_type=chart_type_label,
             )
 
-            logger.info("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
+            logger.debug("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 
         # ---------------------------------------------------------
@@ -383,7 +386,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             phoenix_theme = raw_theme or "classic"
             drawer_theme = "classic"
 
-            logger.info(
+            logger.debug(
                 "[wheel] generate_wheel_pdf_bytes (WheelPdfRequest) %s %04d-%02d-%02d %02d:%02d "
                 "lat=%.4f lng=%.4f tz=%s raw_theme=%s phoenix_theme=%s drawer_theme=%s",
                 getattr(req, "name", None),
@@ -402,7 +405,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
 
             svg = generate_natal_svg_for_wheel(req)  # uses ChartDrawer internally
             pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
-            logger.info("[wheel] PDF generated (WheelPdfRequest), size=%d bytes", len(pdf_bytes))
+            logger.debug("[wheel] PDF generated (WheelPdfRequest), size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 
         # ---------------------------------------------------------
@@ -431,7 +434,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
         phoenix_theme = (kdata.get("theme") or subject.get("theme") or phoenix_theme) or "classic"
         drawer_theme = "classic"
 
-        logger.info(
+        logger.debug(
             "[wheel] legacy path using phoenix_theme=%s drawer_theme=%s subject.zodiac_type=%s houses_system=%s",
             phoenix_theme,
             drawer_theme,
@@ -458,7 +461,7 @@ def generate_wheel_pdf_bytes(req) -> bytes:
         drawer = ChartDrawer(chart_data=chart_data, theme=drawer_theme)
         svg = drawer.generate_svg_string()
         pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
-        logger.info("[wheel] PDF generated (legacy), size=%d bytes", len(pdf_bytes))
+        logger.debug("[wheel] PDF generated (legacy), size=%d bytes", len(pdf_bytes))
         return pdf_bytes
 
     except Exception as e:
