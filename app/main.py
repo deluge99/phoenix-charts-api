@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import charts
 from app.routers import wheel as wheel_routes  # ← import your wheel router
 
+
 app = FastAPI(title="Phoenix Charts API", version="0.1.0")
+
+import logging
+logging.getLogger("phoenix_charts.wheel").setLevel(logging.INFO)
 
 app.add_middleware(
     CORSMiddleware,

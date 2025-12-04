@@ -40,126 +40,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PRIMARY_LOGO_PATH = REPO_ROOT / "images" / "PhoenixLogo.png"
 WATERMARK_LOGO_PATH = REPO_ROOT / "images" / "PhoenixWaterMarkLogo.png"
 
-# ------------------------------------------------------------------
-# Kerykeion color map + CSS var resolver for SVG wheels
-# ------------------------------------------------------------------
-COLOR_MAP = {
-    # Planets
-    "--kerykeion-chart-color-sun": "#ffaa00",
-    "--kerykeion-chart-color-moon": "#f0f0f0ff",
-    "--kerykeion-chart-color-mercury": "#bbbbbb",
-    "--kerykeion-chart-color-venus": "#ff99cc",
-    "--kerykeion-chart-color-mars": "#ff6666",
-    "--kerykeion-chart-color-jupiter": "#ffcc99",
-    "--kerykeion-chart-color-saturn": "#cccc99",
-    "--kerykeion-chart-color-uranus": "#66ccff",
-    "--kerykeion-chart-color-neptune": "#6666ff",
-    "--kerykeion-chart-color-pluto": "#9966cc",
-    # Asteroids & Points
-    "--kerykeion-chart-color-chiron": "#ffcc66",
-    "--kerykeion-chart-color-mean-lilith": "#cc99ff",
-    "--kerykeion-chart-color-true-node": "#99ff99",
-    "--kerykeion-chart-color-mean-node": "#66ffcc",
-    "--kerykeion-chart-color-vertex": "#ff6666",
-    "--kerykeion-chart-color-anti-vertex": "#6666ff",
-    "--kerykeion-chart-color-pars-fortunae": "#ffcc00",
-    "--kerykeion-chart-color-pars-spiritus": "#ccff99",
-    "--kerykeion-chart-color-pars-amoris": "#ff99cc",
-    "--kerykeion-chart-color-pars-fidei": "#99ccff",
-    "--kerykeion-chart-color-ceres": "#ffcc99",
-    "--kerykeion-chart-color-pallas": "#99ccff",
-    "--kerykeion-chart-color-juno": "#ff99cc",
-    "--kerykeion-chart-color-vesta": "#ffcc66",
-    "--kerykeion-chart-color-eris": "#9966cc",
-    "--kerykeion-chart-color-pholus": "#cc6666",
-    "--kerykeion-chart-color-sedna": "#6666cc",
-    "--kerykeion-chart-color-haumea": "#ff99ff",
-    "--kerykeion-chart-color-makemake": "#ccff99",
-    "--kerykeion-chart-color-ixion": "#99ffcc",
-    "--kerykeion-chart-color-orcus": "#ffcc66",
-    "--kerykeion-chart-color-quaoar": "#66ccff",
-    "--kerykeion-chart-color-regulus": "#ffaa00",
-    "--kerykeion-chart-color-spica": "#99ff99",
-    # Houses
-    "--kerykeion-chart-color-first-house": "#ff6666",
-    "--kerykeion-chart-color-fourth-house": "#66ff66",
-    "--kerykeion-chart-color-seventh-house": "#6666ff",
-    "--kerykeion-chart-color-tenth-house": "#ffff66",
-    # Aspects
-    "--kerykeion-chart-color-conjunction": "#ffaa00",
-    "--kerykeion-chart-color-semi-sextile": "#ffcc99",
-    "--kerykeion-chart-color-semi-square": "#ffcc66",
-    "--kerykeion-chart-color-sextile": "#99ccff",
-    "--kerykeion-chart-color-quintile": "#ff99cc",
-    "--kerykeion-chart-color-square": "#ff6666",
-    "--kerykeion-chart-color-trine": "#66ff66",
-    "--kerykeion-chart-color-sesquiquadrate": "#cc6666",
-    "--kerykeion-chart-color-biquintile": "#cc99ff",
-    "--kerykeion-chart-color-quincunx": "#9966cc",
-    "--kerykeion-chart-color-opposition": "#6666ff",
-    # Elements
-    "--kerykeion-chart-color-fire-percentage": "#ff6666",
-    "--kerykeion-chart-color-earth-percentage": "#cc9966",
-    "--kerykeion-chart-color-air-percentage": "#66ccff",
-    "--kerykeion-chart-color-water-percentage": "#6666ff",
-    # Qualities
-    "--kerykeion-chart-color-cardinal-percentage": "#ff6666",
-    "--kerykeion-chart-color-fixed-percentage": "#ffcc66",
-    "--kerykeion-chart-color-mutable-percentage": "#99ccff",
-    # Zodiac Icons
-    "--kerykeion-chart-color-zodiac-icon-0": "#ffaa00",
-    "--kerykeion-chart-color-zodiac-icon-1": "#ffcc99",
-    "--kerykeion-chart-color-zodiac-icon-2": "#99ccff",
-    "--kerykeion-chart-color-zodiac-icon-3": "#66ff66",
-    "--kerykeion-chart-color-zodiac-icon-4": "#ff6666",
-    "--kerykeion-chart-color-zodiac-icon-5": "#cc9966",
-    "--kerykeion-chart-color-zodiac-icon-6": "#ff99cc",
-    "--kerykeion-chart-color-zodiac-icon-7": "#6666ff",
-    "--kerykeion-chart-color-zodiac-icon-8": "#ffcc00",
-    "--kerykeion-chart-color-zodiac-icon-9": "#cccc99",
-    "--kerykeion-chart-color-zodiac-icon-10": "#66ccff",
-    "--kerykeion-chart-color-zodiac-icon-11": "#9966cc",
-    # Zodiac Backgrounds
-    "--kerykeion-chart-color-zodiac-bg-0": "#ffaa00",
-    "--kerykeion-chart-color-zodiac-bg-1": "#ffcc99",
-    "--kerykeion-chart-color-zodiac-bg-2": "#99ccff",
-    "--kerykeion-chart-color-zodiac-bg-3": "#66ff66",
-    "--kerykeion-chart-color-zodiac-bg-4": "#ff6666",
-    "--kerykeion-chart-color-zodiac-bg-5": "#cc9966",
-    "--kerykeion-chart-color-zodiac-bg-6": "#ff99cc",
-    "--kerykeion-chart-color-zodiac-bg-7": "#6666ff",
-    "--kerykeion-chart-color-zodiac-bg-8": "#ffcc00",
-    "--kerykeion-chart-color-zodiac-bg-9": "#cccc99",
-    "--kerykeion-chart-color-zodiac-bg-10": "#66ccff",
-    "--kerykeion-chart-color-zodiac-bg-11": "#9966cc",
-    # Rings
-    "--kerykeion-chart-color-zodiac-radix-ring-0": "#333333",
-    "--kerykeion-chart-color-zodiac-radix-ring-1": "#444444",
-    "--kerykeion-chart-color-zodiac-radix-ring-2": "#555555",
-    # House lines & numbers
-    "--kerykeion-chart-color-houses-radix-line": "#888888",
-    "--kerykeion-chart-color-house-number": "#ffffff",
-    # Earth glyph
-    "--kerykeion-chart-color-earth": "#cc9966",
-    # Lunar phases
-    "--kerykeion-chart-color-lunar-phase-0": "#999999",
-    "--kerykeion-chart-color-lunar-phase-1": "#cccccc",
-    # Paper backgrounds
-    "--kerykeion-chart-color-paper-0": "#000000",
-    "--kerykeion-chart-color-paper-1": "#111111",
-}
-
-VAR_PATTERN = re.compile(r"var\((--kerykeion-[^)]+)\)")
-
-
-def resolve_css_vars(svg: str) -> str:
-    """Replace CSS vars with hard hex colors for consistent rendering."""
-
-    def repl(match):
-        return COLOR_MAP.get(match.group(1), "#000000")
-
-    return VAR_PATTERN.sub(repl, svg)
-
 
 # ------------------------------------------------------------------
 # Theme normalization
@@ -423,7 +303,9 @@ def generate_wheel_pdf_bytes(req) -> bytes:
     Fallback: recompute from explicit birth fields.
     """
     try:
-        # Preferred path: reuse the kerykeion_data sent by Astro-Bot
+        # ---------------------------------------------------------
+        # 1) Preferred path: reuse the kerykeion_data from Astro-Bot
+        # ---------------------------------------------------------
         if getattr(req, "kerykeion_data", None):
             kdata = req.kerykeion_data
             if not isinstance(kdata, dict):
@@ -433,11 +315,23 @@ def generate_wheel_pdf_bytes(req) -> bytes:
             if not isinstance(subject, dict):
                 subject = {}
 
+            # --- Normalize zodiac_type so Pydantic accepts it ---
+            zt = subject.get("zodiac_type")
+            if isinstance(zt, str):
+                zl = zt.lower()
+                if zl.startswith("trop"):
+                    subject["zodiac_type"] = "Tropical"
+                elif zl.startswith("sid"):
+                    subject["zodiac_type"] = "Sidereal"
+            kdata["subject"] = subject
+
             asc = subject.get("ascendant") or subject.get("asc") or {}
             logger.info(
-                "[wheel] Using kerykeion_data from Astro-Bot for wheel; ASC abs_pos=%s sign=%s",
+                "[wheel] Using kerykeion_data from Astro-Bot for wheel; ASC abs_pos=%s sign=%s zodiac_type=%s houses_system=%s",
                 asc.get("abs_pos"),
                 asc.get("sign"),
+                subject.get("zodiac_type"),
+                subject.get("houses_system_identifier"),
             )
 
             raw_theme = (
@@ -445,30 +339,42 @@ def generate_wheel_pdf_bytes(req) -> bytes:
                 or kdata.get("theme")
                 or subject.get("theme")
             )
-            theme = _normalize_theme(raw_theme)
+            # This theme goes into Phoenix recoloring; ChartDrawer can stay on a safe base theme
+            phoenix_theme = _normalize_theme(raw_theme)
+            drawer_theme = phoenix_theme
+            logger.info("[wheel] Theme received=%s phoenix_theme=%s drawer_theme=%s", raw_theme, phoenix_theme, drawer_theme)
 
-            # Convert dict -> ChartDataModel
+            house_sys = kdata.get("house_system") or subject.get("houses_system_identifier")
+            zodiac_type = subject.get("zodiac_type")
+            logger.info("[wheel] house_system=%s zodiac_type=%s", house_sys, zodiac_type)
+
             # Convert dict -> concrete chart data model (Single or Dual)
             k_chart_type = (kdata.get("chart_type") or kdata.get("chartType") or "Natal").lower()
             model_cls = SingleChartDataModel if k_chart_type in ("natal", "composite", "singlereturnchart") else DualChartDataModel
             if hasattr(model_cls, "model_validate"):
-                chart_model = model_cls.model_validate(kdata)  # type: ignore[attr-defined]
+                chart_model = model_cls.model_validate(kdata)  # pydantic v2
             elif hasattr(model_cls, "parse_obj"):
-                chart_model = model_cls.parse_obj(kdata)  # type: ignore[attr-defined]
+                chart_model = model_cls.parse_obj(kdata)       # pydantic v1
             else:
-                chart_model = model_cls(**kdata)  # type: ignore[arg-type]
+                chart_model = model_cls(**kdata)               # fallback
 
-            drawer = ChartDrawer(chart_data=chart_model, theme=theme)
+            drawer = ChartDrawer(chart_data=chart_model, theme=drawer_theme)
             svg = drawer.generate_svg_string()
-            pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
+            pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
             logger.info("[wheel] PDF generated from kerykeion_data, size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 
-        # If this is already a WheelPdfRequest, use the explicit birth fields.
+        # ---------------------------------------------------------
+        # 2) Fallback: explicit birth fields (WheelPdfRequest path)
+        # ---------------------------------------------------------
         if hasattr(req, "year") and hasattr(req, "month"):
-            theme = _normalize_theme(getattr(req, "theme", None))
+            raw_theme = getattr(req, "theme", None)
+            phoenix_theme = raw_theme or "classic"
+            drawer_theme = "classic"
+
             logger.info(
-                "[wheel] generate_wheel_pdf_bytes (WheelPdfRequest) %s %04d-%02d-%02d %02d:%02d lat=%.4f lng=%.4f tz=%s theme=%s",
+                "[wheel] generate_wheel_pdf_bytes (WheelPdfRequest) %s %04d-%02d-%02d %02d:%02d "
+                "lat=%.4f lng=%.4f tz=%s raw_theme=%s phoenix_theme=%s drawer_theme=%s",
                 getattr(req, "name", None),
                 getattr(req, "year", 0),
                 getattr(req, "month", 0),
@@ -478,24 +384,49 @@ def generate_wheel_pdf_bytes(req) -> bytes:
                 getattr(req, "lat", 0.0),
                 getattr(req, "lng", 0.0),
                 getattr(req, "tz_str", "UTC"),
-                theme,
+                raw_theme,
+                phoenix_theme,
+                drawer_theme,
             )
-            svg = generate_natal_svg_for_wheel(req)
-            pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
-            logger.info("[wheel] PDF generated, size=%d bytes", len(pdf_bytes))
+
+            svg = generate_natal_svg_for_wheel(req)  # uses ChartDrawer internally
+            pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
+            logger.info("[wheel] PDF generated (WheelPdfRequest), size=%d bytes", len(pdf_bytes))
             return pdf_bytes
 
-        # Legacy path: attempt to pull from kerykeion_data/subject if present.
+        # ---------------------------------------------------------
+        # 3) Legacy path: rebuild subject from kerykeion_data.subject
+        # ---------------------------------------------------------
         name = getattr(req, "name", None)
         kdata = getattr(req, "kerykeion_data", None)
-        theme = "classic"
+        phoenix_theme = "classic"
 
         if not isinstance(kdata, dict):
             raise ValueError("kerykeion_data missing or invalid")
 
         subject = kdata.get("subject") or {}
-        theme = _normalize_theme(kdata.get("theme") or subject.get("theme") or theme)
-        logger.info("[wheel] legacy path using theme=%s", theme)
+        if not isinstance(subject, dict):
+            subject = {}
+
+        # Normalize zodiac_type here as well
+        zt = subject.get("zodiac_type")
+        if isinstance(zt, str):
+            zl = zt.lower()
+            if zl.startswith("trop"):
+                subject["zodiac_type"] = "Tropical"
+            elif zl.startswith("sid"):
+                subject["zodiac_type"] = "Sidereal"
+
+        phoenix_theme = (kdata.get("theme") or subject.get("theme") or phoenix_theme) or "classic"
+        drawer_theme = "classic"
+
+        logger.info(
+            "[wheel] legacy path using phoenix_theme=%s drawer_theme=%s subject.zodiac_type=%s houses_system=%s",
+            phoenix_theme,
+            drawer_theme,
+            subject.get("zodiac_type"),
+            subject.get("houses_system_identifier"),
+        )
 
         subject_model = AstrologicalSubjectFactory.from_birth_data(
             name=subject.get("name", name or "Chart"),
@@ -513,11 +444,12 @@ def generate_wheel_pdf_bytes(req) -> bytes:
         )
 
         chart_data = ChartDataFactory.create_natal_chart_data(subject_model)
-        drawer = ChartDrawer(chart_data=chart_data, theme=theme)
+        drawer = ChartDrawer(chart_data=chart_data, theme=drawer_theme)
         svg = drawer.generate_svg_string()
-        pdf_bytes = svg_to_pdf_bytes(svg, theme=theme)
-        logger.info("[wheel] PDF generated, size=%d bytes", len(pdf_bytes))
+        pdf_bytes = svg_to_pdf_bytes(svg, theme=phoenix_theme)
+        logger.info("[wheel] PDF generated (legacy), size=%d bytes", len(pdf_bytes))
         return pdf_bytes
+
     except Exception as e:
         logger.error("[wheel] ERROR in generate_wheel_pdf_bytes: %s", e, exc_info=True)
         raise

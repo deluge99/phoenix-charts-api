@@ -1,5 +1,8 @@
 import re
 
+import logging
+logger = logging.getLogger("phoenix_charts.wheel")
+
 # 1) Phoenix sacred overrides — applied on top of every theme (do not change)
 PHOENIX_SACRED_OVERRIDES = {
     # Core Planets
@@ -102,22 +105,17 @@ KERYKEION_THEME_COLORS = {
 
 
 def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
-    """
-    Apply sacred overrides, then theme colors, strip labels, and inline remaining vars.
-    Sacred overrides are always applied; only the 5 theme colors change per theme.
-    """
+    raw_theme = theme
     theme = (theme or "classic").lower().replace("_", "-")
-    theme_colors = KERYKEION_THEME_COLORS.get(theme, KERYKEION_THEME_COLORS["classic"])
+    logger.info("[phoenix_theme] apply_phoenix_perfection raw_theme=%s normalized_theme=%s", raw_theme, theme)
 
-    # 1) Sacred overrides
+    # 1) Sacred Phoenix overrides — ONLY these run
     for var, color in PHOENIX_SACRED_OVERRIDES.items():
         svg = re.sub(rf'{re.escape(var)}\s*:[^;]+;', f'{var}: {color};', svg)
         svg = svg.replace(f"var({var})", color)
 
-    # 2) Theme-specific colors (paper + rings)
-    for var, color in theme_colors.items():
-        svg = re.sub(rf'{re.escape(var)}\s*:[^;]+;', f'{var}: {color};', svg)
-        svg = svg.replace(f"var({var})", color)
+    # 2) DO NOT TOUCH THEME COLORS — Kerykeion already applied them correctly
+    # → This is the fix — remove the old theme override loop
 
     # 3) Strip text labels
     svg = re.sub(r'<text[^>]*class="sign-name"[^>]*>.*?</text>', '', svg, flags=re.DOTALL)

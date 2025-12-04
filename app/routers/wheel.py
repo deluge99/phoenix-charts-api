@@ -16,12 +16,9 @@ async def wheel_pdf_bytes(req: WheelPdfRequest):
     Generate a natal wheel PDF using the Phoenix perfection pipeline.
     """
     logger.info(
-        "[wheel] /wheel/pdf-bytes called name=%s theme=%s tz=%s lat=%.4f lng=%.4f",
-        req.name,
-        req.theme,
-        req.tz_str,
-        req.lat,
-        req.lng,
+    f"[wheel] /wheel/pdf-bytes called name={req.name or 'Unknown'} "
+    f"theme={req.theme or 'classic'} tz={req.tz_str or 'None'} "
+    f"lat={req.lat} lng={req.lng}"
     )
     try:
         pdf_bytes = generate_wheel_pdf_bytes(req)

@@ -7,12 +7,19 @@ from svglib.svglib import svg2rlg
 
 from app.services.phoenix_theme import apply_phoenix_perfection
 
+import logging
+logger = logging.getLogger("phoenix_charts.wheel")
+
 
 def svg_to_pdf_bytes(svg: str, theme: str = "classic") -> bytes:
     """
     Apply Phoenix perfection (colors + theme) and convert SVG to PDF bytes.
     Mirrors the flow from test_wheel_perfection.py but returns bytes.
     """
+
+    theme = theme or "classic"
+    logger.info("[wheel_generator] svg_to_pdf_bytes theme=%s", theme)
+    
     themed_svg = apply_phoenix_perfection(svg, theme)
 
     drawing = svg2rlg(BytesIO(themed_svg.encode("utf-8")))
