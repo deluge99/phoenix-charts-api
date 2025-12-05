@@ -77,8 +77,14 @@ def svg_to_pdf_bytes(
     except Exception as e:
         logger.warning("[wheel_generator] Failed to draw logo: %s", e)
 
-    # Wheel SVG
-    max_size = min(page_width, page_height) - 80
+    # -----------------------------
+    # -----------------------------
+    # 3) Draw wheel SVG (slightly larger than original)
+    # -----------------------------
+    # Use the smaller of width/height, but with a smaller margin than before.
+    # Original was: min(page_width, page_height) - 80
+    max_size = min(page_width, page_height) - 5  # <- smaller margin = bigger wheel
+
     scale = max_size / max(drawing.width, drawing.height)
     drawing.scale(scale, scale)
 

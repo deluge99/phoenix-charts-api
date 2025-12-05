@@ -94,6 +94,8 @@ THEME_VARS: dict[str, dict[str, str]] = {
 }
 
 
+# … everything above stays exactly as you pasted …
+
 def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
     """
     Apply the EXACT Kerykeion theme colors to the SVG.
@@ -127,20 +129,53 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
         )
 
     # 2) Strip text labels (optional – keeps your wheel cleaner like examples)
-    svg = re.sub(r'<text[^>]*class="sign-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
-    svg = re.sub(r'<text[^>]*class="planet-name"[^>]*>.*?</text>', "", svg, flags=re.DOTALL)
+    svg = re.sub(
+        r'<text[^>]*class="sign-name"[^>]*>.*?</text>',
+        "",
+        svg,
+        flags=re.DOTALL,
+    )
+    svg = re.sub(
+        r'<text[^>]*class="planet-name"[^>]*>.*?</text>',
+        "",
+        svg,
+        flags=re.DOTALL,
+    )
 
-    # 3) Inline any remaining var(--kerykeion-...) usages in attributes
+    # 3) Inline any remaining var(--kerykeion-...) usages in attributes / styles
+    #    with some explicit fallbacks for common base vars that might not be
+    #    defined in the theme CSS (e.g. --kerykeion-color-neutral-content).
+    FALLBACK_ALIASES: dict[str, str] = {
+        # If neutral-content isn't defined, fall back to paper-0, then paper-1.
+        "--kerykeion-color-neutral-content": "--kerykeion-chart-color-paper-0",
+        # You can add more aliases here if upstream adds new base vars.
+    }
+
     def _inline_var(m: re.Match) -> str:
         name = m.group(1)
-        return theme_colors.get(name, m.group(0))
+
+        # If the theme defines this var, use it.
+        if name in theme_colors:
+            return theme_colors[name]
+
+        # If we have an alias (e.g. neutral-content -> paper-0), try that.
+        alias = FALLBACK_ALIASES.get(name)
+        if alias and alias in theme_colors:
+            return theme_colors[alias]
+
+        # As a last resort, hard-code a reasonable neutral gray just so that
+        # svglib doesn't see a raw "var(...)" and scream.
+        if name == "--kerykeion-color-neutral-content":
+            return "#9ca3af"  # tweak if you want a different neutral
+
+        # Unknown var: leave it as-is so it's obvious something's missing.
+        return m.group(0)
 
     svg = VAR_PATTERN.sub(_inline_var, svg)
 
     # 4) Ensure the SVG has a "paper" background rect inside <svg>, but
     #    do NOT touch the PDF page background.
     try:
-        # Prefer paper-1, fall back to paper-0
         paper_hex = (
             theme_colors.get("--kerykeion-chart-color-paper-1")
             or theme_colors.get("--kerykeion-chart-color-paper-0")
@@ -148,10 +183,7 @@ def apply_phoenix_perfection(svg: str, theme: str = "classic") -> str:
 
         if paper_hex:
             paper_hex = paper_hex.strip()
-
-            # Avoid double-inserting if we've already added it once
             if 'data-phoenix-paper-bg="1"' not in svg:
-                # Find the opening <svg ...> tag
                 m = re.search(r"<svg[^>]*>", svg, flags=re.IGNORECASE)
                 if m:
                     insert_pos = m.end()
