@@ -11,6 +11,10 @@ import os
 
 app = FastAPI(title="Phoenix Charts API", version="0.1.0")
 
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
 # Debug toggle for phoenix-charts
 PHOENIX_DEBUG = os.getenv("PHOENIX_DEBUG", "0") == "1"
 
