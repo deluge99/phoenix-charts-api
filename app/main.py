@@ -35,7 +35,3 @@ app.include_router(charts.router, prefix="/api/v1")
 # Wheel router (versioned)
 app.include_router(wheel_routes.router, prefix="/api/v1")
 # -> endpoint: POST http://localhost:8001/api/v1/wheel/pdf-bytes
-
-@app.get("/health", tags=["system"])
-def health() -> dict:
-    return {"status": "ok"}
