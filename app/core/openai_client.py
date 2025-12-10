@@ -1,11 +1,11 @@
-import asyncio
-import openai
-from fastapi import HTTPException
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
 
 
 async def openai_stream_chat(messages: list[dict], model: str = "gpt-4o-mini"):
     try:
-        stream = await openai.chat.completions.create(
+        stream = await client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=0.7,
