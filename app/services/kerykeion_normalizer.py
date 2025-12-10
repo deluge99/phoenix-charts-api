@@ -1,14 +1,15 @@
+# app/services/kerykeion_normalizer.py
 def normalize_kerykeion_payload(payload: dict, chart_type: str) -> dict:
-    # We only extract what the prompt actually needs – keeps token count low
-    subject = payload["subject"]
+    subject = payload.get("subject", {})
+
     return {
         "chart_type": chart_type,
         "subject": {
             "name": subject.get("name", "User"),
-            "birth_time": subject["birth_time"],
-            "birth_place": subject["birth_place"],
+            "birth_time": subject.get("birth_time", "Unknown"),
+            "birth_place": subject.get("birth_place", "Location not provided"),
         },
-        "settings": payload["settings"],
+        "settings": payload.get("settings", {}),
         "planets": {
             p["name"]: {
                 k: v
@@ -16,9 +17,12 @@ def normalize_kerykeion_payload(payload: dict, chart_type: str) -> dict:
                 if k in ["sign", "position", "house", "retrograde", "abs_pos"]
             }
             for p in payload.get("celestial_points", [])
-            if p["name"] in payload["active_points"]
+            if p.get("name") in payload.get("active_points", [])
         },
-        "houses": {f"House {i+1}": h["sign"] for i, h in enumerate(payload.get("houses", []))},
-        "aspects": payload.get("aspects", [])[:50],  # cap for token budget
+        "houses": {
+            f"House {i+1}": h.get("sign", "—")
+            for i, h in enumerate(payload.get("houses", []))
+        },
+        "aspects": payload.get("aspects", [])[:50],  # token budget
         "dominants": payload.get("dominants", {}),
     }
