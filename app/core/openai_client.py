@@ -1,6 +1,22 @@
+import os
+
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI()
+# Load .env if available to pick up OPENAI_API_KEY
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    pass
+
+api_key = os.getenv("OPENAI_API_KEY", "").strip()
+if not api_key:
+    raise RuntimeError(
+        "OPENAI_API_KEY is not set. Please export it or add it to your .env before starting the server."
+    )
+
+client = AsyncOpenAI(api_key=api_key)
 
 
 async def openai_stream_chat(messages: list[dict], model: str = "gpt-4o-mini"):
