@@ -7,4 +7,5 @@ python-dotenv
 reportlab 
 svglib 
 lxml 
-pillowopenai==2.9.0
+pillow
+openai==2.9.0
